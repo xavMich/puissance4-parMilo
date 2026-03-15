@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Puissance 4 — Aligne 4, la ligne disparaît !</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --rouge: #ff6b6b;
+      --jaune: #ffd93d;
+      --bleu-fond: #4ecdc4;
+      --bleu-grille: #2d8b84;
+      --blanc: #fff9e6;
+      --ombre: rgba(0,0,0,0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Fredoka', sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(180deg, #6ee7de 0%, #4ecdc4 30%, #38b2ac 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      color: var(--blanc);
+      text-shadow: 3px 3px 0 var(--bleu-grille), 6px 6px 0 var(--ombre);
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .sous-titre {
+      color: rgba(255,255,255,0.95);
+      font-size: 1.1rem;
+      margin-bottom: 20px;
+    }
+
+    .scores {
+      display: flex;
+      gap: 40px;
+      margin-bottom: 16px;
+      background: rgba(255,255,255,0.4);
+      padding: 12px 28px;
+      border-radius: 999px;
+      box-shadow: 0 4px 12px var(--ombre);
+    }
+
+    .score-joueur {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 1.2rem;
+    }
+
+    .score-joueur .pion {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      box-shadow: 0 2px 6px var(--ombre);
+    }
+
+    .score-joueur.rouge .pion { background: var(--rouge); }
+    .score-joueur.jaune .pion { background: var(--jaune); }
+
+    .score-joueur.actif {
+      transform: scale(1.1);
+      text-decoration: underline;
+    }
+
+    .grille-container {
+      background: var(--bleu-grille);
+      padding: 16px;
+      border-radius: 24px;
+      box-shadow: 0 12px 32px var(--ombre), inset 0 2px 0 rgba(255,255,255,0.3);
+      margin-bottom: 20px;
+    }
+
+    .grille {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+      width: min(90vw, 400px);
+    }
+
+    .colonne {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 12px;
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .colonne:hover {
+      background: rgba(255,255,255,0.2);
+      transform: scale(1.02);
+    }
+
+    .cellule {
+      width: 100%;
+      aspect-ratio: 1;
+      max-width: 52px;
+      max-height: 52px;
+      margin: 0 auto;
+      border-radius: 50%;
+      background: var(--blanc);
+      box-shadow: inset 0 -4px 0 rgba(0,0,0,0.15);
+      transition: background 0.2s, transform 0.15s;
+    }
+
+    .cellule.rouge {
+      background: var(--rouge);
+      box-shadow: 0 4px 12px rgba(255,107,107,0.5), inset 0 -2px 0 rgba(0,0,0,0.2);
+    }
+
+    .cellule.jaune {
+      background: var(--jaune);
+      box-shadow: 0 4px 12px rgba(255,217,61,0.5), inset 0 -2px 0 rgba(0,0,0,0.2);
+    }
+
+    .cellule.gagnante {
+      animation: pulse 0.5s ease-in-out 2;
+    }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+    }
+
+    .message {
+      min-height: 56px;
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--blanc);
+      text-align: center;
+      text-shadow: 1px 1px 2px var(--bleu-grille);
+      margin-bottom: 12px;
+    }
+
+    .message.victoire {
+      animation: bounce 0.5s ease;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    .bouton {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 600;
+      padding: 14px 32px;
+      border: none;
+      border-radius: 999px;
+      background: var(--blanc);
+      color: var(--bleu-grille);
+      box-shadow: 0 6px 16px var(--ombre);
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .bouton:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px var(--ombre);
+    }
+
+    .bouton:active {
+      transform: translateY(0);
+    }
+
+    .ecran-config {
+      background: rgba(255,255,255,0.95);
+      padding: 32px;
+      border-radius: 24px;
+      box-shadow: 0 12px 40px var(--ombre);
+      max-width: 380px;
+      width: 100%;
+    }
+
+    .ecran-config h2 {
+      color: var(--bleu-grille);
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    .champ {
+      margin-bottom: 18px;
+    }
+
+    .champ label {
+      display: block;
+      color: var(--bleu-grille);
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+    }
+
+    .champ input,
+    .champ select {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 1rem;
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--bleu-grille);
+      border-radius: 12px;
+      background: var(--blanc);
+      color: #333;
+    }
+
+    .champ input::placeholder {
+      color: #999;
+    }
+
+    .champ input:focus,
+    .champ select:focus {
+      outline: none;
+      border-color: #38b2ac;
+      box-shadow: 0 0 0 3px rgba(78, 205, 196, 0.3);
+    }
+
+    .boutons-config {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .bouton.secondaire {
+      background: transparent;
+      color: var(--blanc);
+      border: 2px solid var(--blanc);
+      font-size: 1rem;
+    }
+
+    .bouton.secondaire:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    #ecran-jeu {
+      display: none;
+    }
+
+    #ecran-jeu.visible {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="ecran-config" class="ecran-config">
+    <h2>Préparer la partie</h2>
+    <div class="champ">
+      <label for="nomJoueur1">Joueur 1 (rouge)</label>
+      <input type="text" id="nomJoueur1" placeholder="Prénom du joueur 1" maxlength="20" autocomplete="off">
+    </div>
+    <div class="champ">
+      <label for="nomJoueur2">Joueur 2 (jaune)</label>
+      <input type="text" id="nomJoueur2" placeholder="Prénom du joueur 2" maxlength="20" autocomplete="off">
+    </div>
+    <div class="champ">
+      <label for="lignesPourGagner">Lignes à faire pour gagner</label>
+      <select id="lignesPourGagner">
+        <option value="3">3 lignes</option>
+        <option value="4">4 lignes</option>
+        <option value="5">5 lignes</option>
+      </select>
+    </div>
+    <div class="boutons-config">
+      <button class="bouton" id="commencerPartie">Commencer la partie</button>
+    </div>
+  </div>
+
+  <div id="ecran-jeu" class="ecran-jeu">
+    <h1>Puissance 4</h1>
+    <p class="sous-titre">Aligne 4 jetons → la ligne disparaît !</p>
+
+    <div class="scores">
+      <div class="score-joueur rouge actif" data-joueur="1">
+        <span class="pion"></span>
+        <span id="labelScore1"></span>
+      </div>
+      <div class="score-joueur jaune" data-joueur="2">
+        <span class="pion"></span>
+        <span id="labelScore2"></span>
+      </div>
+    </div>
+
+    <div class="grille-container">
+      <div class="grille" id="grille"></div>
+    </div>
+
+    <p class="message" id="message"></p>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center;">
+      <button class="bouton" id="nouvellePartie">Nouvelle partie</button>
+      <button class="bouton secondaire" id="changerJoueurs">Changer les joueurs</button>
+    </div>
+  </div>
+
+  <script>
+    const LIGNES = 6;
+    const COLONNES = 7;
+
+    let grille = [];
+    let joueurActif = 1;
+    let scores = { 1: 0, 2: 0 };
+    let partieTerminee = false;
+    let audioCtx = null;
+    let nomsJoueurs = { 1: '', 2: '' };
+    let lignesPourGagner = 3;
+
+    function nomJoueur(j) {
+      const n = (nomsJoueurs[j] || '').trim();
+      return n || (j === 1 ? 'Rouge' : 'Jaune');
+    }
+
+    function initGrille() {
+      grille = [];
+      for (let r = 0; r < LIGNES; r++) {
+        grille[r] = [];
+        for (let c = 0; c < COLONNES; c++) grille[r][c] = 0;
+      }
+    }
+
+    function jouerSonVictoire() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+        const durees = [0.15, 0.15, 0.15, 0.35, 0.15, 0.5];
+        let t = audioCtx.currentTime;
+        notes.forEach((freq, i) => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.frequency.value = freq;
+          osc.type = 'sine';
+          gain.gain.setValueAtTime(0.2, t);
+          gain.gain.exponentialRampToValueAtTime(0.01, t + durees[i]);
+          osc.start(t);
+          osc.stop(t + durees[i]);
+          t += durees[i];
+        });
+      } catch (e) {}
+    }
+
+    function trouverLigneGagnante(joueur) {
+      const J = joueur ?? joueurActif;
+      for (let r = 0; r < LIGNES; r++) {
+        for (let c = 0; c <= COLONNES - 4; c++) {
+          if (grille[r][c] === J && grille[r][c+1] === J && grille[r][c+2] === J && grille[r][c+3] === J)
+            return { type: 'H', r, c };
+        }
+      }
+      for (let c = 0; c < COLONNES; c++) {
+        for (let r = 0; r <= LIGNES - 4; r++) {
+          if (grille[r][c] === J && grille[r+1][c] === J && grille[r+2][c] === J && grille[r+3][c] === J)
+            return { type: 'V', r, c };
+        }
+      }
+      for (let r = 0; r <= LIGNES - 4; r++) {
+        for (let c = 0; c <= COLONNES - 4; c++) {
+          if (grille[r][c] === J && grille[r+1][c+1] === J && grille[r+2][c+2] === J && grille[r+3][c+3] === J)
+            return { type: 'D1', r, c };
+          if (grille[r+3][c] === J && grille[r+2][c+1] === J && grille[r+1][c+2] === J && grille[r][c+3] === J)
+            return { type: 'D2', r, c };
+        }
+      }
+      return null;
+    }
+
+    function cellulesASupprimer(ligne) {
+      const cells = [];
+      if (ligne.type === 'H') {
+        for (let i = 0; i < 4; i++) cells.push([ligne.r, ligne.c + i]);
+      } else if (ligne.type === 'V') {
+        for (let i = 0; i < 4; i++) cells.push([ligne.r + i, ligne.c]);
+      } else if (ligne.type === 'D1') {
+        for (let i = 0; i < 4; i++) cells.push([ligne.r + i, ligne.c + i]);
+      } else {
+        for (let i = 0; i < 4; i++) cells.push([ligne.r + (3 - i), ligne.c + i]);
+      }
+      return cells;
+    }
+
+    function supprimerEtGravite(cells) {
+      for (const [r, c] of cells) grille[r][c] = 0;
+      for (let c = 0; c < COLONNES; c++) {
+        const colonne = [];
+        for (let r = 0; r < LIGNES; r++) if (grille[r][c] !== 0) colonne.push(grille[r][c]);
+        const nbVides = LIGNES - colonne.length;
+        for (let r = 0; r < LIGNES; r++) grille[r][c] = r < nbVides ? 0 : colonne[r - nbVides];
+      }
+    }
+
+    /** Retourne une ligne de 4 (n'importe quel joueur) ou null. */
+    function trouverUneLigneQuelconque() {
+      const l1 = trouverLigneGagnante(1);
+      if (l1) return { ligne: l1, joueur: 1 };
+      const l2 = trouverLigneGagnante(2);
+      if (l2) return { ligne: l2, joueur: 2 };
+      return null;
+    }
+
+    /** Enchaîne suppressions + gravité tant qu'il existe un alignement de 4. Compte les points pour chaque joueur. */
+    function cascadesEtScores() {
+      let next = trouverUneLigneQuelconque();
+      while (next) {
+        scores[next.joueur]++;
+        supprimerEtGravite(cellulesASupprimer(next.ligne));
+        next = trouverUneLigneQuelconque();
+      }
+    }
+
+    function afficherGrille(highlight) {
+      const el = document.getElementById('grille');
+      el.innerHTML = '';
+      for (let c = 0; c < COLONNES; c++) {
+        const col = document.createElement('div');
+        col.className = 'colonne';
+        col.dataset.col = c;
+        if (!partieTerminee) col.addEventListener('click', () => jouerColonne(c));
+        for (let r = 0; r < LIGNES; r++) {
+          const cell = document.createElement('div');
+          cell.className = 'cellule';
+          const val = grille[r][c];
+          if (val === 1) cell.classList.add('rouge');
+          if (val === 2) cell.classList.add('jaune');
+          if (highlight && highlight.some(([rr, cc]) => rr === r && cc === c)) cell.classList.add('gagnante');
+          col.appendChild(cell);
+        }
+        el.appendChild(col);
+      }
+    }
+
+    function majScores() {
+      document.getElementById('labelScore1').textContent = `${nomJoueur(1)} : ${scores[1]}/${lignesPourGagner}`;
+      document.getElementById('labelScore2').textContent = `${nomJoueur(2)} : ${scores[2]}/${lignesPourGagner}`;
+      document.querySelectorAll('.score-joueur').forEach((el) => {
+        el.classList.toggle('actif', Number(el.dataset.joueur) === joueurActif);
+      });
+    }
+
+    function jouerColonne(c) {
+      if (partieTerminee) return;
+      let r = -1;
+      for (let i = LIGNES - 1; i >= 0; i--) {
+        if (grille[i][c] === 0) { r = i; break; }
+      }
+      if (r === -1) return;
+      grille[r][c] = joueurActif;
+      afficherGrille();
+
+      const ligne = trouverLigneGagnante();
+      if (ligne) {
+        const cells = cellulesASupprimer(ligne);
+        afficherGrille(cells);
+        setTimeout(() => {
+          supprimerEtGravite(cells);
+          scores[joueurActif]++;
+          cascadesEtScores();
+          majScores();
+          afficherGrille();
+          const gagnant = scores[1] >= lignesPourGagner ? 1 : scores[2] >= lignesPourGagner ? 2 : null;
+          if (gagnant !== null) {
+            partieTerminee = true;
+            document.getElementById('message').textContent = `🎉 Bravo ${nomJoueur(gagnant)} ! Tu as gagné la partie ! 🎉`;
+            document.getElementById('message').classList.add('victoire');
+            jouerSonVictoire();
+            return;
+          }
+          joueurActif = joueurActif === 1 ? 2 : 1;
+          document.getElementById('message').textContent = `Au tour de ${nomJoueur(joueurActif)} !`;
+          majScores();
+        }, 600);
+      } else {
+        joueurActif = joueurActif === 1 ? 2 : 1;
+        document.getElementById('message').textContent = `Au tour de ${nomJoueur(joueurActif)} !`;
+        majScores();
+      }
+    }
+
+    function demarrerPartie() {
+      const n1 = (document.getElementById('nomJoueur1').value || '').trim();
+      const n2 = (document.getElementById('nomJoueur2').value || '').trim();
+      nomsJoueurs[1] = n1 || 'Joueur 1';
+      nomsJoueurs[2] = n2 || 'Joueur 2';
+      lignesPourGagner = parseInt(document.getElementById('lignesPourGagner').value, 10) || 3;
+      document.getElementById('ecran-config').style.display = 'none';
+      document.getElementById('ecran-jeu').classList.add('visible');
+      partieTerminee = false;
+      scores = { 1: 0, 2: 0 };
+      joueurActif = 1;
+      initGrille();
+      afficherGrille();
+      majScores();
+      document.getElementById('message').textContent = `Au tour de ${nomJoueur(1)} !`;
+      document.getElementById('message').classList.remove('victoire');
+    }
+
+    function nouvellePartie() {
+      partieTerminee = false;
+      scores = { 1: 0, 2: 0 };
+      joueurActif = 1;
+      initGrille();
+      afficherGrille();
+      majScores();
+      document.getElementById('message').textContent = `Au tour de ${nomJoueur(1)} !`;
+      document.getElementById('message').classList.remove('victoire');
+    }
+
+    function revenirConfig() {
+      document.getElementById('ecran-jeu').classList.remove('visible');
+      document.getElementById('ecran-config').style.display = 'block';
+      document.getElementById('nomJoueur1').value = nomsJoueurs[1] || '';
+      document.getElementById('nomJoueur2').value = nomsJoueurs[2] || '';
+      document.getElementById('lignesPourGagner').value = String(lignesPourGagner);
+    }
+
+    document.getElementById('commencerPartie').addEventListener('click', demarrerPartie);
+    document.getElementById('nouvellePartie').addEventListener('click', nouvellePartie);
+    document.getElementById('changerJoueurs').addEventListener('click', revenirConfig);
+  </script>
+</body>
+</html>
